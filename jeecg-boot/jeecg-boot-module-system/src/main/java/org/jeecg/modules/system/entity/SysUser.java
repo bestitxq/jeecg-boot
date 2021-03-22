@@ -182,4 +182,10 @@ public class SysUser implements Serializable {
 
     /**设备id uniapp推送用*/
     private String clientId;
+
+    /**当前执行的注册邀请规则id(sys_user_register_urle.id)*/
+    private String regRuleId;
+
+    /**当前执行的注册邀请规则是否已完成（字典yn）*/
+    private String regRuleComplete;
 }

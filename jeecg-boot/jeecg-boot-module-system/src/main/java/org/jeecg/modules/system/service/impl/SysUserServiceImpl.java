@@ -3,6 +3,7 @@ package org.jeecg.modules.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -437,6 +438,17 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	@Override
 	public List<SysUser> queryByDepIds(List<String> departIds, String username) {
 		return userMapper.queryByDepIds(departIds,username);
+	}
+
+	@Override
+	public Result checkUserIsEffectiveBy(String userId,String username) {
+		LambdaQueryWrapper<SysUser> qw = new LambdaQueryWrapper<>();
+		if(StringUtils.isNotBlank(userId)){
+			qw.eq(SysUser::getId,userId);
+		}else{
+			qw.eq(SysUser::getUsername,username);
+		}
+		return this.checkUserIsEffective(this.getOne(qw));
 	}
 
 }

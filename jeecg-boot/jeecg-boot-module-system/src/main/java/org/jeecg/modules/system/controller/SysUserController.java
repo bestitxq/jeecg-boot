@@ -1,6 +1,8 @@
 package org.jeecg.modules.system.controller;
 
 
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -18,6 +20,7 @@ import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.aspect.annotation.PermissionData;
 import org.jeecg.common.constant.CommonConstant;
+import org.jeecg.common.constant.config.ConfigConstant;
 import org.jeecg.common.system.api.ISysBaseAPI;
 import org.jeecg.modules.base.service.BaseCommonService;
 import org.jeecg.common.system.query.QueryGenerator;
@@ -28,6 +31,7 @@ import org.jeecg.modules.system.entity.*;
 import org.jeecg.modules.system.model.DepartIdModel;
 import org.jeecg.modules.system.model.SysUserSysDepartModel;
 import org.jeecg.modules.system.service.*;
+import org.jeecg.modules.system.util.CaptchaUtils;
 import org.jeecg.modules.system.vo.SysDepartUsersVO;
 import org.jeecg.modules.system.vo.SysUserRoleVO;
 import org.jeecgframework.poi.excel.ExcelImportUtil;
@@ -37,6 +41,8 @@ import org.jeecgframework.poi.excel.entity.ImportParams;
 import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
@@ -93,6 +99,12 @@ public class SysUserController {
 
     @Resource
     private BaseCommonService baseCommonService;
+
+    @Autowired
+    private CaptchaUtils captchaUtils;
+
+    @Autowired
+    private ISysUserRegisterService userRegisterService;
 
     /**
      * 获取用户列表数据
@@ -840,47 +852,99 @@ public class SysUserController {
         return result;
     }
 
-    
 
 
-	/**
-	 * 用户注册接口
-	 * 
-	 * @param jsonObject
-	 * @param user
-	 * @return
-	 */
-	@PostMapping("/register")
-	public Result<JSONObject> userRegister(@RequestBody JSONObject jsonObject, SysUser user) {
-		Result<JSONObject> result = new Result<JSONObject>();
-		String phone = jsonObject.getString("phone");
-		String smscode = jsonObject.getString("smscode");
-		Object code = redisUtil.get(phone);
-		String username = jsonObject.getString("username");
-		//未设置用户名，则用手机号作为用户名
-		if(oConvertUtils.isEmpty(username)){
+
+
+    /**
+     * 用户注册接口
+     *
+     * @param jsonObject
+     * @param user
+     * @return
+     */
+    @PostMapping("/register")
+    @Transactional
+    public Result<JSONObject> userRegister(@RequestBody JSONObject jsonObject, SysUser user) {
+        Result<JSONObject> result = new Result<JSONObject>();
+        try{
+            // 注册类型
+            DateTime nowDate = DateUtil.date();
+            // 邀请注册的用户存在邀请码
+            result = this.registerCommon(result, jsonObject, user, ConfigConstant.DEFAULT_ADMIN_ROLE, ConfigConstant.ISADMIN_CAPTCHA, nowDate);
+            return result;
+        } catch (Exception e) {
+            // 手动回滚事务
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            e.printStackTrace();
+            result.error500("注册失败");
+        }
+        return result;
+    }
+
+    /**
+     * 用户注册接口
+     *
+     * @param jsonObject
+     * @param user
+     * @return
+     */
+    @PostMapping("/receptionRegister")
+    @Transactional
+    public Result<JSONObject> receptionUserRegister(@RequestBody JSONObject jsonObject, SysUser user) {
+        Result<JSONObject> result = new Result<JSONObject>();
+        try{
+            // 注册类型
+            String regMode = jsonObject.getString("regmode");
+            DateTime nowDate = DateUtil.date();
+            // 邀请注册的用户存在邀请码
+            String invitecode = jsonObject.getString("invitecode");
+            result = this.registerCommon(result, jsonObject, user, ConfigConstant.DEFAULT_SHOP_ROLE, ConfigConstant.ISRECEPTION_CAPTCHA, nowDate);
+            if(result.isFail()){
+                return result;
+            }
+            // 添加邀请注册记录，并检测符合奖励条件的奖励vip
+            userRegisterService.addUserRegister(invitecode,regMode, user.getId(), nowDate);
+
+        } catch (Exception e) {
+            // 手动回滚事务
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            e.printStackTrace();
+            result.error500("注册失败");
+        }
+        return result;
+    }
+
+    public Result registerCommon(Result result, JSONObject jsonObject, SysUser user, String roleId, Boolean captchaFlag, Date nowDate) {
+
+        String phone = jsonObject.getString("phone");
+        String smscode = jsonObject.getString("smscode");
+        String username = jsonObject.getString("username");
+        String password = jsonObject.getString("password");
+        String email = jsonObject.getString("email");
+
+        //未设置用户名，则用手机号作为用户名
+        if (oConvertUtils.isEmpty(username)) {
             username = phone;
         }
         //未设置密码，则随机生成一个密码
-		String password = jsonObject.getString("password");
-		if(oConvertUtils.isEmpty(password)){
+        if (oConvertUtils.isEmpty(password)) {
             password = RandomUtil.randomString(8);
         }
-		String email = jsonObject.getString("email");
-		SysUser sysUser1 = sysUserService.getUserByName(username);
-		if (sysUser1 != null) {
-			result.setMessage("用户名已注册");
-			result.setSuccess(false);
-			return result;
-		}
-		SysUser sysUser2 = sysUserService.getUserByPhone(phone);
-		if (sysUser2 != null) {
-			result.setMessage("该手机号已注册");
-			result.setSuccess(false);
-			return result;
-		}
+        SysUser sysUser1 = sysUserService.getUserByName(username);
+        if (sysUser1 != null) {
+            result.setMessage("用户名已注册");
+            result.setSuccess(false);
+            return result;
+        }
+        SysUser sysUser2 = sysUserService.getUserByPhone(phone);
+        if (sysUser2 != null) {
+            result.setMessage("该手机号已注册");
+            result.setSuccess(false);
+            return result;
+        }
 
-		if(oConvertUtils.isNotEmpty(email)){
+        if (oConvertUtils.isNotEmpty(email)) {
             SysUser sysUser3 = sysUserService.getUserByEmail(email);
             if (sysUser3 != null) {
                 result.setMessage("邮箱已被注册");
@@ -888,37 +952,29 @@ public class SysUserController {
                 return result;
             }
         }
-        if(null == code){
-            result.setMessage("手机验证码失效，请重新获取");
-            result.setSuccess(false);
-            return result;
-        }
-		if (!smscode.equals(code.toString())) {
-			result.setMessage("手机验证码错误");
-			result.setSuccess(false);
-			return result;
-		}
 
-		try {
-			user.setCreateTime(new Date());// 设置创建时间
-			String salt = oConvertUtils.randomGen(8);
-			String passwordEncode = PasswordUtil.encrypt(username, password, salt);
-			user.setSalt(salt);
-			user.setUsername(username);
-			user.setRealname(username);
-			user.setPassword(passwordEncode);
-			user.setEmail(email);
-			user.setPhone(phone);
-			user.setStatus(CommonConstant.USER_UNFREEZE);
-			user.setDelFlag(CommonConstant.DEL_FLAG_0);
-			user.setActivitiSync(CommonConstant.ACT_SYNC_0);
-			sysUserService.addUserWithRole(user,"ee8626f80f7c2619917b6236f3a7f02b");//默认临时角色 test
-			result.success("注册成功");
-		} catch (Exception e) {
-			result.error500("注册失败");
-		}
-		return result;
-	}
+        Result captchaResult = captchaUtils.isSjCaptchaOk(phone, smscode, captchaFlag);
+        if(captchaResult.isFail()){
+            return captchaResult;
+        }
+
+        user.setCreateTime(nowDate);// 设置创建时间
+        String salt = oConvertUtils.randomGen(8);
+        String passwordEncode = PasswordUtil.encrypt(username, password, salt);
+        user.setSalt(salt);
+        user.setUsername(username);
+        user.setRealname(username);
+        user.setPassword(passwordEncode);
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setStatus(CommonConstant.USER_UNFREEZE);
+        user.setDelFlag(CommonConstant.DEL_FLAG_0);
+        user.setActivitiSync(CommonConstant.ACT_SYNC_0);
+        sysUserService.addUserWithRole(user, roleId);//默认临时角色 test
+        result.setSuccess(true);
+        result.setMessage("注册成功");
+        return result;
+    }
 
 	/**
 	 * 根据用户名或手机号查询用户信息

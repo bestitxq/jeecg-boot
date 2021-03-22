@@ -12,6 +12,7 @@ import org.apache.shiro.SecurityUtils;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.constant.CacheConstant;
 import org.jeecg.common.constant.CommonConstant;
+import org.jeecg.common.constant.config.ConfigConstant;
 import org.jeecg.common.system.api.ISysBaseAPI;
 import org.jeecg.modules.base.service.BaseCommonService;
 import org.jeecg.common.system.util.JwtUtil;
@@ -21,10 +22,7 @@ import org.jeecg.common.util.encryption.EncryptedString;
 import org.jeecg.modules.system.entity.SysDepart;
 import org.jeecg.modules.system.entity.SysUser;
 import org.jeecg.modules.system.model.SysLoginModel;
-import org.jeecg.modules.system.service.ISysDepartService;
-import org.jeecg.modules.system.service.ISysDictService;
-import org.jeecg.modules.system.service.ISysLogService;
-import org.jeecg.modules.system.service.ISysUserService;
+import org.jeecg.modules.system.service.*;
 import org.jeecg.modules.system.util.RandImageUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,67 +56,37 @@ public class LoginController {
     private ISysDictService sysDictService;
 	@Resource
 	private BaseCommonService baseCommonService;
+	@Autowired
+	private ILoginCommonService loginCommonService;
 
 	private static final String BASE_CHECK_CODES = "qwertyuiplkjhgfdsazxcvbnmQWERTYUPLKJHGFDSAZXCVBNM1234567890";
 
-	@ApiOperation("登录接口")
+
+	/**
+	 * @description: 后台登录
+	 * @param sysLoginModel: 登录封装信息
+	 * @author: bestitxq
+	 * @date: 2021/3/5 上午11:49
+	 */
+	@ApiOperation("后台登录接口")
 	@RequestMapping(value = "/login", method = RequestMethod.POST)
 	public Result<JSONObject> login(@RequestBody SysLoginModel sysLoginModel){
-		Result<JSONObject> result = new Result<JSONObject>();
-		String username = sysLoginModel.getUsername();
-		String password = sysLoginModel.getPassword();
-		//update-begin--Author:scott  Date:20190805 for：暂时注释掉密码加密逻辑，有点问题
-		//前端密码加密，后端进行密码解密
-		//password = AesEncryptUtil.desEncrypt(sysLoginModel.getPassword().replaceAll("%2B", "\\+")).trim();//密码解密
-		//update-begin--Author:scott  Date:20190805 for：暂时注释掉密码加密逻辑，有点问题
-
-		//update-begin-author:taoyan date:20190828 for:校验验证码
-        String captcha = sysLoginModel.getCaptcha();
-        if(captcha==null){
-            result.error500("验证码无效");
-            return result;
-        }
-        String lowerCaseCaptcha = captcha.toLowerCase();
-		String realKey = MD5Util.MD5Encode(lowerCaseCaptcha+sysLoginModel.getCheckKey(), "utf-8");
-		Object checkCode = redisUtil.get(realKey);
-		//当进入登录页时，有一定几率出现验证码错误 #1714
-		if(checkCode==null || !checkCode.toString().equals(lowerCaseCaptcha)) {
-			result.error500("验证码错误");
-			return result;
-		}
-		//update-end-author:taoyan date:20190828 for:校验验证码
-		
-		//1. 校验用户是否有效
-		//update-begin-author:wangshuai date:20200601 for: 登录代码验证用户是否注销bug，if条件永远为false
-		LambdaQueryWrapper<SysUser> queryWrapper = new LambdaQueryWrapper<>();
-		queryWrapper.eq(SysUser::getUsername,username);
-		SysUser sysUser = sysUserService.getOne(queryWrapper);
-		//update-end-author:wangshuai date:20200601 for: 登录代码验证用户是否注销bug，if条件永远为false
-		result = sysUserService.checkUserIsEffective(sysUser);
-		if(!result.isSuccess()) {
-			return result;
-		}
-		
-		//2. 校验用户名或密码是否正确
-		String userpassword = PasswordUtil.encrypt(username, password, sysUser.getSalt());
-		String syspassword = sysUser.getPassword();
-		if (!syspassword.equals(userpassword)) {
-			result.error500("用户名或密码错误");
-			return result;
-		}
-				
-		//用户登录信息
-		userInfo(sysUser, result);
-		//update-begin--Author:liusq  Date:20210126  for：登录成功，删除redis中的验证码
-		redisUtil.del(realKey);
-		//update-begin--Author:liusq  Date:20210126  for：登录成功，删除redis中的验证码
-		LoginUser loginUser = new LoginUser();
-		BeanUtils.copyProperties(sysUser, loginUser);
-		baseCommonService.addLog("用户名: " + username + ",登录成功！", CommonConstant.LOG_TYPE_1, null,loginUser);
-        //update-end--Author:wangshuai  Date:20200714  for：登录日志没有记录人员
-		return result;
+		return loginCommonService.loginUser(sysLoginModel, ConfigConstant.ISADMIN_CAPTCHA);
 	}
-	
+
+	/**
+	 * @description: 前台登录
+	 * @param sysLoginModel: 登录封装信息
+	 * @author: bestitxq
+	 * @date: 2021/3/5 上午11:49
+	 */
+	@ApiOperation("前台登录接口")
+	@RequestMapping(value = "/receptionLogin", method = RequestMethod.POST)
+	public Result<JSONObject> receptionLogin(@RequestBody SysLoginModel sysLoginModel){
+		return loginCommonService.loginUser(sysLoginModel, ConfigConstant.ISRECEPTION_CAPTCHA);
+	}
+
+
 	/**
 	 * 退出登录
 	 * @param request

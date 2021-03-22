@@ -233,4 +233,12 @@ public interface ISysUserService extends IService<SysUser> {
 	 * @return
 	 */
 	List<SysUser> queryByDepIds(List<String> departIds, String username);
+
+	/**
+	 * 根据用户名或用户id校验用户是否有效，userId与username只有一个不为null，若输入错误时产生两个不为null的值则只生效userId
+	 * @param userId
+	 * @param username
+	 * @return
+	 */
+	Result checkUserIsEffectiveBy(String userId, String username);
 }

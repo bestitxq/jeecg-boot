@@ -17,6 +17,7 @@
         <module>jeecg-cloud-monitor</module>
         <module>jeecg-cloud-xxljob</module>
         <module>jeecg-cloud-nacos</module>
+        <module>jeecg-cloud-shop</module>
     </modules>
 
 
