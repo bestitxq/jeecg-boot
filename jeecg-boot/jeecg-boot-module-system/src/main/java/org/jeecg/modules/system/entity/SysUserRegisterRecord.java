@@ -22,11 +22,11 @@ import java.io.Serializable;
  * @Version: V1.0
  */
 @Data
-@TableName("sys_user_register")
+@TableName("sys_user_register_record")
 @Accessors(chain = true)
 @EqualsAndHashCode(callSuper = false)
 @ApiModel(value="sys_user_register对象", description="用户注册信息表")
-public class SysUserRegister implements Serializable {
+public class SysUserRegisterRecord implements Serializable {
     private static final long serialVersionUID = 1L;
 
 	/**主键*/

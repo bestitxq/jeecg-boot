@@ -1,6 +1,5 @@
 import Vue from 'vue'
 import router from './router'
-import store from './store'
 import { ACCESS_TOKEN } from '@/store/mutation-types'
 
 const whiteList = ['/login', '/register', '/register-result'] // no redirect whitelist
@@ -21,8 +20,7 @@ router.beforeEach((to, from, next) => {
       // 在免登录白名单，直接进入
       next()
     } else {
-      next()
-      // next({ path: whiteList[0], query: { redirect: to.fullPath } })
+      next({ path: whiteList[0], query: { redirect: to.fullPath } })
     }
   }
 })

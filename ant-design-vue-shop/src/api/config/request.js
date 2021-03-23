@@ -166,8 +166,9 @@ export function logout(){
     Vue.ls.remove(USER_INFO)
     router.push({name: 'login'})
   }).catch((res) =>{
-    window.location.reload()
+    console.log("重新登录错误",res);
   })
+  window.location.reload()
 }
 
 export function login(paramets, redirectUrl){

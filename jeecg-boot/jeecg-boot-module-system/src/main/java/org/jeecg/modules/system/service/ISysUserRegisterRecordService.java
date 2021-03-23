@@ -1,7 +1,7 @@
 package org.jeecg.modules.system.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import org.jeecg.modules.system.entity.SysUserRegister;
+import org.jeecg.modules.system.entity.SysUserRegisterRecord;
 
 import java.util.Date;
 
@@ -11,7 +11,7 @@ import java.util.Date;
  * @Date:   2021-03-10
  * @Version: V1.0
  */
-public interface ISysUserRegisterService extends IService<SysUserRegister> {
+public interface ISysUserRegisterRecordService extends IService<SysUserRegisterRecord> {
 
     /**
      * @description: 添加邀请注册记录，并检测符合奖励条件的奖励vip

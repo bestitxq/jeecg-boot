@@ -73,7 +73,8 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/sys/cas/client/validateLogin", "anon"); //cas验证登录
         filterChainDefinitionMap.put("/sys/randomImage/**", "anon"); //登录验证码接口排除
         filterChainDefinitionMap.put("/sys/checkCaptcha", "anon"); //登录验证码接口排除
-        filterChainDefinitionMap.put("/sys/login", "anon"); //登录接口排除
+        filterChainDefinitionMap.put("/sys/login", "anon"); //后台登录接口排除
+        filterChainDefinitionMap.put("/sys/receptionLogin", "anon"); //前台登录接口排除
         filterChainDefinitionMap.put("/sys/mLogin", "anon"); //登录接口排除
         filterChainDefinitionMap.put("/sys/logout", "anon"); //登出接口排除
         filterChainDefinitionMap.put("/sys/thirdLogin/**", "anon"); //第三方登录
@@ -81,7 +82,8 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/sys/sms", "anon");//短信验证码
         filterChainDefinitionMap.put("/sys/phoneLogin", "anon");//手机登录
         filterChainDefinitionMap.put("/sys/user/checkOnlyUser", "anon");//校验用户是否存在
-        filterChainDefinitionMap.put("/sys/user/register", "anon");//用户注册
+        filterChainDefinitionMap.put("/sys/user/register", "anon");// 后台用户注册排除
+        filterChainDefinitionMap.put("/sys/user//receptionRegister", "anon");// 前台商城用户注册排除
         filterChainDefinitionMap.put("/sys/user/querySysUser", "anon");//根据手机号获取用户信息
         filterChainDefinitionMap.put("/sys/user/phoneVerification", "anon");//用户忘记密码验证手机号
         filterChainDefinitionMap.put("/sys/user/passwordChange", "anon");//用户更改密码
