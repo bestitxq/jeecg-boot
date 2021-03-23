@@ -156,19 +156,22 @@ function logoutTs(title, content, okText){
     okText: okText,
     mask: false,
     onOk: () => {
+      console.log(5);
       logout()
     }
   })
 }
 export function logout(){
   userLogout().then((res)=>{
+    console.log(6);
     Vue.ls.remove(ACCESS_TOKEN)
     Vue.ls.remove(USER_INFO)
     router.push({name: 'login'})
   }).catch((res) =>{
+    console.log(7);
     console.log("重新登录错误",res);
+    window.location.reload()
   })
-  window.location.reload()
 }
 
 export function login(paramets, redirectUrl){

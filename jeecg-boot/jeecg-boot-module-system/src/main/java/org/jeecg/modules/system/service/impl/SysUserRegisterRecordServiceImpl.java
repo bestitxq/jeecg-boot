@@ -167,7 +167,17 @@ public class SysUserRegisterRecordServiceImpl extends ServiceImpl<SysUserRegiste
      * @date: 2021/3/10 下午3:46
      */
     private void grantVip(SysUserRegisterRule nowRule, SysUser user, Date nowDate) {
-        // ------------------- 1.存储或更新用户会员信息 --------------------
+
+        // ------------------- 1.存储会员奖励发放记录 -------------------
+        SysUserMemberRecord memberRecord = new SysUserMemberRecord();
+        memberRecord.setMemberDay(nowRule.getVipDay());
+        memberRecord.setRuleId(nowRule.getId());
+        memberRecord.setUserId(user.getId());
+        memberRecord.setStatus(DictConstant.YN_YES);
+        memberRecord.setMemberOpenType(DictConstant.MEMBER_OPEN_REGISTER);
+        userMemberRecordService.save(memberRecord);
+
+        // ------------------- 2.存储或更新用户会员信息 --------------------
         // 用户会员是否早已存在
         LambdaQueryWrapper<SysUserMember> qw = Wrappers.lambdaQuery();
         qw.eq(SysUserMember::getUserId, user.getId());
@@ -191,6 +201,7 @@ public class SysUserRegisterRecordServiceImpl extends ServiceImpl<SysUserRegiste
                 qw1.eq(SysUserMemberRecord::getMemberOpenType, DictConstant.MEMBER_OPEN_REGISTER);
                 qw1.eq(SysUserMemberRecord::getUserId, user.getId());
                 qw1.eq(SysUserMemberRecord::getStatus, DictConstant.YN_YES);
+                qw1.ne(SysUserMemberRecord::getId, memberRecord.getId());
                 qw1.last("limit 1");
                 SysUserMemberRecord record = userMemberRecordService.getOne(qw1);
                 // 已过期会员结束日期：结束日期 = 偏移天数 - 已用会员天数
@@ -212,14 +223,7 @@ public class SysUserRegisterRecordServiceImpl extends ServiceImpl<SysUserRegiste
         userMember.setStatus(DictConstant.YN_YES);
         userMemberService.save(userMember);
 
-        // ------------------- 2.存储会员奖励发放记录 -------------------
-        SysUserMemberRecord memberRecord = new SysUserMemberRecord();
-        memberRecord.setMemberDay(nowRule.getVipDay());
-        memberRecord.setRuleId(nowRule.getId());
-        memberRecord.setUserId(user.getId());
-        memberRecord.setStatus(DictConstant.YN_YES);
-        memberRecord.setMemberOpenType(DictConstant.MEMBER_OPEN_REGISTER);
-        userMemberRecordService.save(memberRecord);
+
     }
 
 }
