@@ -15,10 +15,11 @@ import org.springframework.messaging.handler.annotation.Header;
 /**
  * RabbitMq接受者2
  * （@RabbitListener声明类上，一个类只能监听一个队列）
+ *  订阅者订阅太频繁，且服务器启动速度变慢，以后有需要再打开即可
  */
 @Slf4j
-@RabbitListener(queues = CloudConstant.MQ_JEECG_PLACE_ORDER)
-@RabbitComponent(value = "helloReceiver2")
+// @RabbitListener(queues = CloudConstant.MQ_JEECG_PLACE_ORDER)
+// @RabbitComponent(value = "helloReceiver2")
 public class HelloReceiver2 extends BaseRabbiMqHandler<BaseMap> {
 
     @RabbitHandler

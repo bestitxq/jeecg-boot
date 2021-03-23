@@ -14,7 +14,7 @@ import org.jeecg.common.constant.config.ConfigConstant;
 import org.jeecg.common.util.RedisUtil;
 import org.jeecg.modules.system.entity.*;
 import org.jeecg.modules.system.mapper.SysUserRegisterMapper;
-import org.jeecg.modules.system.service.ISysUserService;
+import org.jeecg.modules.system.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

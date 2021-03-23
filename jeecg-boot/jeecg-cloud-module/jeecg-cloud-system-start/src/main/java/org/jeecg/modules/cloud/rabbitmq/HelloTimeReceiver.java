@@ -12,9 +12,12 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 
+/**
+ * 订阅者订阅太频繁，且服务器启动速度变慢，以后有需要再打开即可
+ */
 @Slf4j
-@RabbitListener(queues = CloudConstant.MQ_JEECG_PLACE_ORDER_TIME)
-@RabbitComponent(value = "helloTimeReceiver")
+// @RabbitListener(queues = CloudConstant.MQ_JEECG_PLACE_ORDER_TIME)
+// @RabbitComponent(value = "helloTimeReceiver")
 public class HelloTimeReceiver extends BaseRabbiMqHandler<BaseMap> {
 
     @RabbitHandler

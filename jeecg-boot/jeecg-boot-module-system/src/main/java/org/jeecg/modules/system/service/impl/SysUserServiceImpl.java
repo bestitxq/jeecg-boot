@@ -354,8 +354,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 	 * @return
 	 */
 	@Override
-	public Result<?> checkUserIsEffective(SysUser sysUser) {
-		Result<?> result = new Result<Object>();
+	public Result checkUserIsEffective(SysUser sysUser) {
+		Result result = new Result<Object>();
 		//情况1：根据用户信息查询，该用户不存在
 		if (sysUser == null) {
 			result.error500("该用户不存在，请注册");
@@ -376,6 +376,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 			result.error500("该用户已冻结");
 			return result;
 		}
+		result.setResult(sysUser);
+		result.setSuccess(true);
+		result.setCode(CommonConstant.SC_OK_200);
 		return result;
 	}
 

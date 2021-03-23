@@ -76,7 +76,7 @@ module.exports = {
   },
 
   devServer: {
-    port: 8080,
+    port: 3001,
     proxy: {
       '/aaa': {
         target: 'http://localhost:9999', //请求本地 需要jeecg-boot后台项目

@@ -611,4 +611,16 @@ public class RedisUtil {
 			e.printStackTrace();
 		}
 	}
+
+	/**
+	 *  删除指定key
+	 * @param key
+	 */
+	public void remove(String key) {
+		try {
+			redisTemplate.delete(key);
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+	}
 }

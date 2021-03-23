@@ -172,6 +172,10 @@ mybatis-plus:
     call-setters-on-nulls: true
 #jeecg专用配置
 jeecg :
+  # 前台：在注册和登录时是否需要验证码  false:不需要验证，反之需要
+  isReceptionCaptcha: true
+  # 后台：在注册和登录时是否需要验证码  false:不需要验证，反之需要
+  isAdminCaptcha: true
   # 本地：local\Minio：minio\阿里云：alioss
   uploadType: alioss
   path :
