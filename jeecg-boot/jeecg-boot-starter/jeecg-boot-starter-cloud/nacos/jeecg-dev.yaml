@@ -99,7 +99,7 @@ jeecg :
     secretKey: ??
     bucketName: jeecgos
     staticDomain: ??
-  # ElasticSearch 6设置
+  # ElasticSearch 设置
   elasticsearch:
     cluster-name: jeecg-ES
     cluster-nodes: 127.0.0.1:9200
