@@ -192,11 +192,11 @@ jeecg :
     secretKey: ??
     bucketName: jeecgos
     staticDomain: ??
-  # ElasticSearch 6设置
+  # ElasticSearch 设置
   elasticsearch:
     cluster-name: jeecg-ES
     cluster-nodes: 127.0.0.1:9200
-    check-enabled: false
+    check-enabled: true
   # 表单设计器配置
   desform:
     # 主题颜色（仅支持 16进制颜色代码）

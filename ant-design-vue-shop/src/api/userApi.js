@@ -59,7 +59,7 @@ export function showVipRule(parameter) {
 //7、累计用户邀请注册人数
 export function getInviteUserNum(parameter) {
     return axios({
-        url: '/sys/userRegister/getInviteUserNum',
+        url: '/sys/userRegisterRecord/getInviteUserNum',
         method: 'get',
         params: parameter
     })

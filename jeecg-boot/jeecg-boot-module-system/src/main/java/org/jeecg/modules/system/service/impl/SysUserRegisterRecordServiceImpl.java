@@ -13,7 +13,7 @@ import org.jeecg.common.constant.DictConstant;
 import org.jeecg.common.constant.config.ConfigConstant;
 import org.jeecg.common.util.RedisUtil;
 import org.jeecg.modules.system.entity.*;
-import org.jeecg.modules.system.mapper.SysUserRegisterMapper;
+import org.jeecg.modules.system.mapper.SysUserRegisterRecordMapper;
 import org.jeecg.modules.system.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,14 +29,14 @@ import java.util.List;
  * @Version: V1.0
  */
 @Service
-public class SysUserRegisterServiceImpl extends ServiceImpl<SysUserRegisterMapper, SysUserRegister> implements ISysUserRegisterService {
+public class SysUserRegisterRecordServiceImpl extends ServiceImpl<SysUserRegisterRecordMapper, SysUserRegisterRecord> implements ISysUserRegisterRecordService {
 
     @Autowired
     private RedisUtil redisUtil;
     @Autowired
     private ISysUserService userService;
     @Autowired
-    private ISysUserRegisterService userRegisterService;
+    private ISysUserRegisterRecordService userRegisterRecordService;
     @Autowired
     private ISysUserRegisterRuleService userRegisterRuleService;
     @Autowired
@@ -127,7 +127,7 @@ public class SysUserRegisterServiceImpl extends ServiceImpl<SysUserRegisterMappe
         // -------------------------------3.end--------------------------------------
 
         // -------------------------------4.用户注册记录存储start--------------------------------------
-        SysUserRegister register = new SysUserRegister();
+        SysUserRegisterRecord register = new SysUserRegisterRecord();
         // 邀请人id
         register.setUserId(userId);
         // 被邀请人id
@@ -139,12 +139,12 @@ public class SysUserRegisterServiceImpl extends ServiceImpl<SysUserRegisterMappe
         // 注册时间 当前时间
         register.setRegisterTime(nowDate);
         // 保存记录
-        userRegisterService.save(register);
+        userRegisterRecordService.save(register);
         // -------------------------------4.end--------------------------------------
 
         // ------------5.满足条件vip发放奖励，旧注册记录标记发放完成，开始新一轮vip奖励 start---------------
-        LambdaQueryWrapper<SysUserRegister> qw = Wrappers.lambdaQuery();
-        qw.eq(SysUserRegister::getUserId, userId);
+        LambdaQueryWrapper<SysUserRegisterRecord> qw = Wrappers.lambdaQuery();
+        qw.eq(SysUserRegisterRecord::getUserId, userId);
         int count = this.count(qw);
         // 已注册人数满足用户当前邀请规则， 发放vip，更新用户下一邀请规则
         if (count == nowRule.getUserNum() && !DictConstant.YN_YES.equals(user.getRegRuleComplete())) {
@@ -167,13 +167,14 @@ public class SysUserRegisterServiceImpl extends ServiceImpl<SysUserRegisterMappe
      * @date: 2021/3/10 下午3:46
      */
     private void grantVip(SysUserRegisterRule nowRule, SysUser user, Date nowDate) {
+
         // ------------------- 1.存储会员奖励发放记录 -------------------
         SysUserMemberRecord memberRecord = new SysUserMemberRecord();
         memberRecord.setMemberDay(nowRule.getVipDay());
         memberRecord.setRuleId(nowRule.getId());
         memberRecord.setUserId(user.getId());
-        memberRecord.setUserId(user.getId());
         memberRecord.setStatus(DictConstant.YN_YES);
+        memberRecord.setMemberOpenType(DictConstant.MEMBER_OPEN_REGISTER);
         userMemberRecordService.save(memberRecord);
 
         // ------------------- 2.存储或更新用户会员信息 --------------------
@@ -193,8 +194,20 @@ public class SysUserRegisterServiceImpl extends ServiceImpl<SysUserRegisterMappe
             } else {
                 // 当前会员已过期，则重新设置开始结束会员日期
                 hasMember.setStartTime(nowDate);
-                // 已过期会员结束日期：结束日期 = 当前日期 + 偏移天数
-                hasMember.setEndTime(DateUtil.offsetDay(nowDate, nowRule.getVipDay()));
+
+                // 获取用户开通记录中邀请注册最近一条的数据
+                LambdaQueryWrapper<SysUserMemberRecord> qw1 = Wrappers.lambdaQuery();
+                qw1.orderByDesc(SysUserMemberRecord::getCreateTime);
+                qw1.eq(SysUserMemberRecord::getMemberOpenType, DictConstant.MEMBER_OPEN_REGISTER);
+                qw1.eq(SysUserMemberRecord::getUserId, user.getId());
+                qw1.eq(SysUserMemberRecord::getStatus, DictConstant.YN_YES);
+                qw1.ne(SysUserMemberRecord::getId, memberRecord.getId());
+                qw1.last("limit 1");
+                SysUserMemberRecord record = userMemberRecordService.getOne(qw1);
+                // 已过期会员结束日期：结束日期 = 偏移天数 - 已用会员天数
+                Integer offsetDay = ObjectUtil.isNotNull(record) ? nowRule.getVipDay() - record.getMemberDay() : nowRule.getVipDay();
+                hasMember.setEndTime(DateUtil.offsetDay(nowDate, offsetDay));
+
             }
             userMemberService.updateById(hasMember);
             return;
@@ -209,6 +222,8 @@ public class SysUserRegisterServiceImpl extends ServiceImpl<SysUserRegisterMappe
         // 启用会员
         userMember.setStatus(DictConstant.YN_YES);
         userMemberService.save(userMember);
+
+
     }
 
 }

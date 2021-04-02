@@ -15,7 +15,7 @@ import Storage from 'vue-ls'
 import config from './config/defaultSettings'
 import './config/component_use'
 // 路由拦截验证
-import '@/permission'
+import './permission'
 
 Vue.use(router)
 Vue.use(Storage, config.storageOptions )

@@ -37,6 +37,10 @@ public class SysUserMemberRecord implements Serializable {
 	@Excel(name = "用户id", width = 15)
     @ApiModelProperty(value = "用户id")
     private String userId;
+	/**会员开通类型（字典member_open_type）*/
+	@Excel(name = "用会员开通类型", width = 15)
+    @ApiModelProperty(value = "会员开通类型")
+    private String memberOpenType;
 	/**如果是邀请好友注册规则奖励的会员，则存在rule_id*/
 	@Excel(name = "规则id", width = 15)
     @ApiModelProperty(value = "规则id")

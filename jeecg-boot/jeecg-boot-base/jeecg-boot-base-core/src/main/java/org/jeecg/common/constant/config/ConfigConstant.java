@@ -31,11 +31,11 @@ public class ConfigConstant {
     public static boolean ISADMIN_CAPTCHA;
 
     @Value(value = "${jeecg.isReceptionCaptcha}")
-    public static void setIsReceptionCaptcha(boolean isReceptionCaptcha) {
+    public void setIsReceptionCaptcha(boolean isReceptionCaptcha) {
         ConfigConstant.ISRECEPTION_CAPTCHA = isReceptionCaptcha;
     }
     @Value(value = "${jeecg.isAdminCaptcha}")
-    public static void setIsAdminCaptcha(boolean isAdminCaptcha) {
+    public void setIsAdminCaptcha(boolean isAdminCaptcha) {
         ConfigConstant.ISADMIN_CAPTCHA = isAdminCaptcha;
     }
 }

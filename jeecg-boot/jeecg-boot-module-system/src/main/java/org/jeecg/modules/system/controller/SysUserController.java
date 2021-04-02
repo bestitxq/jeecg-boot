@@ -1,9 +1,13 @@
 package org.jeecg.modules.system.controller;
 
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -11,6 +15,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -104,7 +109,10 @@ public class SysUserController {
     private CaptchaUtils captchaUtils;
 
     @Autowired
-    private ISysUserRegisterService userRegisterService;
+    private ISysUserRegisterRecordService userRegisterRecordService;
+
+    @Autowired
+    private ISysUserRegisterCodeService userRegisterCodeService;
 
     /**
      * 获取用户列表数据
@@ -904,7 +912,7 @@ public class SysUserController {
                 return result;
             }
             // 添加邀请注册记录，并检测符合奖励条件的奖励vip
-            userRegisterService.addUserRegister(invitecode,regMode, user.getId(), nowDate);
+            userRegisterRecordService.addUserRegister(invitecode,regMode, user.getId(), nowDate);
 
         } catch (Exception e) {
             // 手动回滚事务
@@ -1393,5 +1401,55 @@ public class SysUserController {
         user.setPhone(phone);
         sysUserService.updateById(user);
         return Result.ok("手机号设置成功!");
+    }
+
+
+    /**
+     * @description: 用户推广注册接口
+     * @author: bestitxq
+     * @date: 2021/3/10 下午6:41
+     */
+    @GetMapping("/generateAdUrl")
+    public Result generateAdUrl() {
+        // 获取当前登录用户
+        LoginUser user = (LoginUser) SecurityUtils.getSubject().getPrincipal();
+        String userId = user.getId();
+        Date nowTime = DateUtil.date();
+        // 邀请码过期时间，默认一年有效，后续有需求可以配置为动态
+        Date endTime = DateUtil.offsetDay(nowTime, ConfigConstant.INVITE_CODE_MYSQL_TIME);
+        // 生成邀请码 = md5（用户id+当前日期毫秒值）
+        String invitecode = SecureUtil.md5(userId + nowTime.getTime());
+
+        LambdaQueryWrapper<SysUserRegisterCode> qw = Wrappers.lambdaQuery();
+        qw.eq(SysUserRegisterCode::getUserId, userId);
+        List<SysUserRegisterCode> codeList = userRegisterCodeService.list(qw);
+        SysUserRegisterCode registerCode = null;
+        // 邀请码 数据库中不存在则存储，存在则判断当前时间是否在邀请码有效期内，不在有效期内则重新设置有效期与邀请码
+        if(CollectionUtil.isEmpty(codeList)){
+            registerCode = new SysUserRegisterCode();
+            // 邀请码生效期限
+            registerCode.setStartTime(nowTime);
+            registerCode.setEndTime(endTime);
+            registerCode.setCode(invitecode);
+            registerCode.setUserId(userId);
+            userRegisterCodeService.save(registerCode);
+        }else{
+            registerCode = codeList.get(0);
+            // 如果已经过期，则重新设置一年有效期,且更新邀请码
+            if(!DateUtil.isIn(nowTime, registerCode.getStartTime(), registerCode.getEndTime())){
+                registerCode.setStartTime(nowTime);
+                registerCode.setEndTime(endTime);
+                registerCode.setCode(invitecode);
+                userRegisterCodeService.updateById(registerCode);
+            }
+        }
+
+        // 如果缓存中不存在邀请码，则生成30天的缓存
+        if(ObjectUtil.isNull(redisUtil.get(registerCode.getCode()))){
+            redisUtil.set(invitecode, JSON.toJSONString(registerCode), ConfigConstant.INVITE_CODE_CACHE_TIME);
+        }
+        // 生成邀请链接
+        String adUrl = StrUtil.format(ConfigConstant.INVITE_URL, ConfigConstant.BEFORE_DOMAIN_NAME, registerCode.getCode());
+        return Result.OK(adUrl);
     }
 }
